@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 import xlrd
 import openpyxl
+import xlsxwriter
+import schedule
+import time
 from matplotlib import pyplot as plt
 from datetime import datetime
 from openpyxl.utils.cell import get_column_letter
@@ -12,6 +15,7 @@ from tweepy import OAuthHandler
 from tweepy import Stream
 from tweepy import API
 from tweepy import Cursor
+import os
 
 
 
@@ -97,9 +101,15 @@ class TwitterListener(StreamListener):
             return False
         print(status)
 
+
+
 class DateEditing():
     def dateToString(self):
-        file = ('/Users/calebdimenstein/Desktop/Sources_6_6.xlsx')
+        source = '/Users/calebdimenstein/Desktop/Twitter/Sources/Sources_'
+        date = excel_formatter.excel_handle_generator()
+        xlsx = '.xlsx'
+        source_day = source+date+xlsx
+        file = (source_day)
         wb = xlrd.open_workbook(file)
         sheet1 = wb.sheet_by_index(0)
         testDate = sheet1.row_values(2)
@@ -123,7 +133,7 @@ class DateEditing():
         #print(updatedDate)
 
 
-        wb = openpyxl.load_workbook('/Users/calebdimenstein/Desktop/Sources_6_6.xlsx')
+        wb = openpyxl.load_workbook(source_day)
         wb.sheetnames
         sheet = wb["Sheet1"]
         amountOfRows = sheet.max_row
@@ -147,9 +157,23 @@ class DateEditing():
                 #print("COUNT",count)
                 sheet[get_column_letter(5)+str(k)]=updatedDate
 
-
-        wb.save('/Users/calebdimenstein/Desktop/Sources_6_6.xlsx')
+        for k in range(1,amountOfRows):
+            sheet.cell(row = k, column = 12).value = sheet.cell(row = k, column = 5).value
+        for m in range (1,amountOfRows):
+            sheet.cell(row = m, column = 5).value = sheet.cell(row = m, column = 13).value
+        for l in range (1,amountOfRows):
+            sheet.cell(row = l+1, column = 5).value = sheet.cell(row = l, column = 12).value
+        for n in range (1,amountOfRows):
+            sheet.cell(row = n, column = 12).value = sheet.cell(row = n, column = 14).value
+        sheet.cell(row = 1, column = 5).value = "Date"
+        wb.save(source_day)
         return wb
+    def excel_handle_generator(self):
+        dt = datetime.today()
+        day = dt.day
+        month = dt.month
+        excel_handle = str(month)+"_"+str(day)
+        return excel_handle
 
 class TweetAnalyzer():
     """
@@ -184,6 +208,17 @@ class TweetAnalyzer():
         return df
 
 if __name__ == '__main__':
+    excel_formatter = DateEditing()
+    source = '/Users/calebdimenstein/Desktop/Twitter/Sources/Sources_'
+    date = excel_formatter.excel_handle_generator()
+    xlsx = '.xlsx'
+    source_day = source+date+xlsx
+
+
+    workbook_filePath = source_day
+    wb = openpyxl.Workbook()
+    wb.save(workbook_filePath)
+
     twitter_client = TwitterClient()
     api = twitter_client.get_twitter_client_api()
     tweet_analyzer = TweetAnalyzer()
@@ -201,7 +236,7 @@ if __name__ == '__main__':
         df = tweet_analyzer.tweets_to_data_frame(tweets)
         dataframes.append(df)
     results=pd.concat(dataframes, ignore_index=True)
-    results.to_excel("Sources_6_6.xlsx")
+    results.to_excel(source_day)
     print (results)
     print(results.size)
 
@@ -209,6 +244,7 @@ if __name__ == '__main__':
     print("DATE EDITOR RUN")
     date_editor = DateEditing()
     newDates = date_editor.dateToString()
+
 
 
 
@@ -230,22 +266,4 @@ if __name__ == '__main__':
     #plt.show()
 
 
-    #PLOTTING TIME SERIES DATA
-    '''
-    scatter=result.plot.scatter(x='date',y='likes')
-
-    time_likes = pd.Series(data=result['likes'].values, index=result['date'])
-    time_likes.plot(figsize=(16,4), label="likes", legend=True)
-    plt.show()
-    '''
-    #time_retweets = pd.Series(data=result['retweet'].values, index=result['date'])
-    #time_retweets.plot(figsize=(16,4), label="retweets", legend=True)
-
-    #plt.show()
-
-
-
-    #print (dir(tweets[0])) #what we can pull out
-    #print (tweets[0].favorite_count)
-    # Authenticate using config.py and connect to Twitter Streaming API.
-    #hash_tag_list = ["donal trump", "hillary clinton", "barack obama", "bernie sanders"]
+    #
